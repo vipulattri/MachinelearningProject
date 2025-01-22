@@ -1,9 +1,13 @@
+import os
 from flask import Flask, render_template, jsonify, request
 import pandas as pd
 import numpy as np
 import pickle
+
 app = Flask(__name__)
-model = pickle.load(open("LinearRegressionModel.pkl",'rb'))
+
+# Load the model
+model = pickle.load(open("LinearRegressionModel.pkl", 'rb'))
 car = pd.read_csv('Cleaned_Car.csv')
 
 @app.route('/')
@@ -18,7 +22,6 @@ def index():
 def get_models():
     company = request.args.get('company')
     if company:
-        # Filter the car models based on the selected company
         models = car[car['company'] == company]['name'].unique()
         return jsonify(models)
     return jsonify([])
@@ -31,13 +34,17 @@ def predict():
     year = int(request.form.get('year'))
     kms_driven = int(request.form.get('kilo_driven'))
     
-    # Add your prediction logic here
-    print(company, car_model, year, fuel_type, kms_driven)
+    print(f"Company: {company}, Car Model: {car_model}, Year: {year}, Fuel Type: {fuel_type}, KMS Driven: {kms_driven}")
     
-    prediction  = model.predict(pd.DataFrame([[car_model,company,year,kms_driven,fuel_type]],columns=['name','company','year','kms_driven','fuel_type']))
-    print(prediction[0])
-    # Return a response after processing the form data
-    return str(np.round(prediction[0],2))
+    prediction_input = pd.DataFrame([[car_model, company, year, kms_driven, fuel_type]],
+                                    columns=['name', 'company', 'year', 'kms_driven', 'fuel_type'])
+    
+    prediction = model.predict(prediction_input)
+    
+    return str(np.round(prediction[0], 2))
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    # Get the port number from the environment variable, default to 5000 if not set
+    port = int(os.environ.get("PORT", 5000))
+    # Listen on all interfaces (0.0.0.0) and the specified port
+    app.run(host='0.0.0.0', port=port, debug=True)
